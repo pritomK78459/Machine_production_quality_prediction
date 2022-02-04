@@ -6,7 +6,7 @@ from random import random
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import cross_val_score, cross_validate, train_test_split, RandomizedSearchCV
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.preprocessing import StandardScaler
@@ -15,22 +15,14 @@ from sklearn.decomposition import PCA
 
 def train_decision_tree_regressor(X_train:pd.DataFrame, y_train:pd.Series):
 
-    # this function will train a decision tree regressor on the train features and target
+    # this function will train a Gradient Boosting Regressor on the train features and target
 
-    # parameters for hyperparameter tuning
-    parameters= {"splitter":["best","random"],
-                "max_depth" : [5,9,12,18, 22],
-                "min_samples_leaf":list(range(1,20,2)),
-                "max_leaf_nodes":[None,10,30,50,70,90],
-                "min_weight_fraction_leaf":[0.1,0.2,0.3,0.4,0.5],
-                "max_features":["auto","log2","sqrt",None],
-                }
+    GBR = GradientBoostingRegressor() # initialize the regressor
 
-    DecisionTree = DecisionTreeRegressor() # initialize the regressor
+    # regressor = RandomizedSearchCV(estimator=RandomForest,param_distributions=parameters, 
+    #                                 n_iter=100, cv=3, verbose=2, n_jobs=-1, random_state=42)   # initialize the randomized search regressor
     
-    regressor = RandomizedSearchCV(DecisionTree, parameters, random_state=10)   # initialize the randomized search regressor
-    
-    results = regressor.fit(X_train, y_train) # train the regressor
+    results = GBR.fit(X_train, y_train) # train the regressor
 
     return results
 
@@ -43,7 +35,7 @@ if __name__ == '__main__':
     parser.add_argument('--no-save', dest='save', action='store_false', help='do not save the model')
     parser.set_defaults(features='datasets/preprocessed_datasets/preprocessed_features.csv',
                         target='datasets/preprocessed_datasets/preprocessed_target.csv',
-                        output='Models/DecisionTreeBest.sav',
+                        output='Models/GradientBoostingBest.sav',
                         save=True)
     args = parser.parse_args()
 
@@ -61,6 +53,8 @@ if __name__ == '__main__':
     # scaling the features
     scaler = StandardScaler()
     scaled_features = scaler.fit_transform(features)
+    pca = PCA(n_components=60, random_state=42)
+    decomposed_features = pca.fit_transform(scaled_features)
 
     target = final_df['quality']
 
@@ -68,9 +62,9 @@ if __name__ == '__main__':
 
     results = train_decision_tree_regressor(X_train, y_train)
 
-    print(results.best_estimator_)  # best parameters
+    # print(results.best_estimator_)  # best parameters
 
-    predictions = results.predict(X_test)
+    predictions = results.predict(X_test)   # model predictions
 
     MAE_score = mean_absolute_error(y_test, predictions)    # evalutate the model on test data using mean absolute error
     MSE_score = mean_squared_error(y_test, predictions)     # evalutate the model on test data using mean squared error
